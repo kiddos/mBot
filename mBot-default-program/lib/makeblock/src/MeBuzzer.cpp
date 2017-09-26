@@ -1,5 +1,5 @@
 #include "MeBuzzer.h"
-#include "arduino.h"
+#include "Arduino.h"
 
 #include <avr/io.h>
 #include <stdint.h>
