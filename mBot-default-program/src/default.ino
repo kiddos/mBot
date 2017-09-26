@@ -348,7 +348,7 @@ void readSensor(int device) {
       0xff  0x55   0x4 0x3 0x1    0x1    0x1  0xa
   ***************************************************/
   float value = 0.0;
-  int port, slot, pin;
+  int port, pin;
   port = readBuffer(6);
   pin = port;
   switch (device) {
