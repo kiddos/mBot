@@ -50,7 +50,6 @@
 #include "MeBluetooth.h"
 #include "MeBuzzer.h"
 #include "MeSerial.h"
-#include "MeUSBHost.h"
 #include "MeUltrasonicSensor.h"
 
 /*********************  Mbot Board GPIO Map *********************************/

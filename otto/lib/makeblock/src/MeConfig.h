@@ -117,7 +117,6 @@
 #ifndef MeConfig_H
 #define MeConfig_H
 
-#include <utility/EEPROM.h>
 #include <utility/SPI.h>
 #include <utility/Servo.h>
 #include <utility/SoftwareSerial.h>

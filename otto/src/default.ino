@@ -1,43 +1,10 @@
-#include <Servo.h>
-#include <SoftwareSerial.h>
+#include <MeMCore.h>
 #include <Wire.h>
 
-#include "mCore.h"
-
-MeUltrasonic ultr(PORT_3);
-MeBuzzer buzzer;
+Servo servos[8];
+MeUltrasonicSensor us;
 MePort generalDevice;
-Servo servo;
-
-#define NTD1 294
-#define NTD2 330
-#define NTD3 350
-#define NTD4 393
-#define NTD5 441
-#define NTD6 495
-#define NTD7 556
-#define NTDL1 147
-#define NTDL2 165
-#define NTDL3 175
-#define NTDL4 196
-#define NTDL5 221
-#define NTDL6 248
-#define NTDL7 278
-#define NTDH1 589
-#define NTDH2 661
-#define NTDH3 700
-#define NTDH4 786
-#define NTDH5 882
-#define NTDH6 990
-#define NTDH7 112
-
-#define RUN_F 0x01
-#define RUN_B 0x01 << 1
-#define RUN_L 0x01 << 2
-#define RUN_R 0x01 << 3
-#define STOP 0
-uint8_t motor_sta = STOP;
-enum { MODE_A, MODE_B, MODE_C };
+MeBuzzer buzzer;
 
 typedef struct MeModule {
   int device;
@@ -64,51 +31,135 @@ union {
   short shortVal;
 } valShort;
 
-MeModule modules[12];
-int analogs[8] = {A0, A1, A2, A3, A4, A5, A6, A7};
-uint8_t mode = MODE_A;
+#if defined(__AVR_ATmega32U4__)
+const int analogs[12] PROGMEM = {A0, A1, A2, A3, A4,  A5,
+                                 A6, A7, A8, A9, A10, A11};
+#else
+const int analogs[8] PROGMEM = {A0, A1, A2, A3, A4, A5, A6, A7};
+#endif
 
+String mVersion = "06.01.108";
 boolean isAvailable = false;
+
 int len = 52;
 char buffer[52];
-char bufferBt[52];
 byte index = 0;
 byte dataLen;
 byte modulesLen = 0;
 boolean isStart = false;
 char serialRead;
-String mVersion = "1.2.103";
-float angleServo = 90.0;
-unsigned char prevc = 0;
+uint8_t command_index = 0;
+String irBuffer = "";
 double lastTime = 0.0;
 double currentTime = 0.0;
+double lastIRTime = 0.0;
 
 #define VERSION 0
 #define ULTRASONIC_SENSOR 1
+#define TEMPERATURE_SENSOR 2
+#define LIGHT_SENSOR 3
+#define POTENTIONMETER 4
+#define JOYSTICK 5
+#define GYRO 6
+#define SOUND_SENSOR 7
+#define RGBLED 8
+#define SEVSEG 9
+#define MOTOR 10
 #define SERVO 11
+#define ENCODER 12
+#define IR 13
+#define IRREMOTE 14
+#define PIRMOTION 15
+#define INFRARED 16
+#define LINEFOLLOWER 17
+#define IRREMOTECODE 18
 #define SHUTTER 20
+#define LIMITSWITCH 21
+#define BUTTON 22
+#define HUMITURE 23
+#define FLAMESENSOR 24
+#define GASSENSOR 25
+#define COMPASS 26
+#define TEMPERATURE_SENSOR_1 27
 #define DIGITAL 30
 #define ANALOG 31
 #define PWM 32
 #define SERVO_PIN 33
 #define TONE 34
+#define BUTTON_INNER 35
+#define ULTRASONIC_ARDUINO 36
+#define PULSEIN 37
+#define STEPPER 40
+#define LEDMATRIX 41
 #define TIMER 50
+#define TOUCH_SENSOR 51
+#define JOYSTICK_MOVE 52
+#define COMMON_COMMONCMD 60
+// Secondary command
+#define SET_STARTER_MODE 0x10
+#define SET_AURIGA_MODE 0x11
+#define SET_MEGAPI_MODE 0x12
+#define GET_BATTERY_POWER 0x70
+#define GET_AURIGA_MODE 0x71
+#define GET_MEGAPI_MODE 0x72
+#define ENCODER_BOARD 61
+// Read type
+#define ENCODER_BOARD_POS 0x01
+#define ENCODER_BOARD_SPEED 0x02
+
+#define ENCODER_PID_MOTION 62
+// Secondary command
+#define ENCODER_BOARD_POS_MOTION 0x01
+#define ENCODER_BOARD_SPEED_MOTION 0x02
+#define ENCODER_BOARD_PWM_MOTION 0x03
+#define ENCODER_BOARD_SET_CUR_POS_ZERO 0x04
+#define ENCODER_BOARD_CAR_POS_MOTION 0x05
+
+#define PM25SENSOR 63
+// Secondary command
+#define GET_PM1_0 0x01
+#define GET_PM2_5 0x02
+#define GET_PM10 0x03
 
 #define GET 1
 #define RUN 2
 #define RESET 4
 #define START 5
+float angleServo = 90.0;
+int servo_pins[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+unsigned char prevc = 0;
+boolean buttonPressed = false;
+uint8_t keyPressed = 0;
 
-void setup() {
-  buzzer.tone(NTD1, 300);
-  delay(300);
-  buzzer.tone(NTD2, 300);
-  delay(300);
-  buzzer.tone(NTD3, 300);
-  delay(300);
-  Serial.begin(115200);
-  buzzer.noTone();
-}
+/*
+ * function list
+ */
+void buzzerOn();
+void buzzerOff();
+unsigned char readBuffer(int index);
+void writeBuffer(int index, unsigned char c);
+void writeHead();
+void writeEnd();
+void writeSerial(unsigned char c);
+void readSerial();
+void parseData();
+void callOK();
+void sendByte(char c);
+void sendString(String s);
+void sendFloat(float value);
+void sendShort(double value);
+void sendDouble(double value);
+short readShort(int idx);
+float readFloat(int idx);
+char* readString(int idx, int len);
+uint8_t* readUint8(int idx, int len);
+void runModule(int device);
+int searchServoPin(int pin);
+void readSensor(int device);
+
+void buzzerOn() { buzzer.tone(500, 1000); }
+
+void buzzerOff() { buzzer.noTone(); }
 
 unsigned char readBuffer(int index) { return buffer[index]; }
 
@@ -131,55 +182,22 @@ void readSerial() {
   }
 }
 
-void serialHandle() {
-  readSerial();
-  if (isAvailable) {
-    unsigned char c = serialRead & 0xff;
-    if (c == 0x55 && isStart == false) {
-      if (prevc == 0xff) {
-        index = 1;
-        isStart = true;
-      }
-    } else {
-      prevc = c;
-      if (isStart) {
-        if (index == 2) {
-          dataLen = c;
-        } else if (index > 2) {
-          dataLen--;
-        }
-        writeBuffer(index, c);
-      }
-    }
-    index++;
-    if (index > 51) {
-      index = 0;
-      isStart = false;
-    }
-    if (isStart && dataLen == 0 && index > 3) {
-      isStart = false;
-      parseData();
-      index = 0;
-    }
-  }
-}
-
-int px = 0;
-void loop() {
-  while (true) {
-    serialHandle();
-  }
-}
-
+/*
+ff 55 len idx action device port slot data a
+0  1  2   3   4      5      6    7    8
+*/
 void parseData() {
   isStart = false;
   int idx = readBuffer(3);
+  command_index = (uint8_t)idx;
   int action = readBuffer(4);
   int device = readBuffer(5);
   switch (action) {
     case GET: {
-      writeHead();
-      writeSerial(idx);
+      if (device != ULTRASONIC_SENSOR) {
+        writeHead();
+        writeSerial(idx);
+      }
       readSensor(device);
       writeEnd();
     } break;
@@ -189,6 +207,7 @@ void parseData() {
     } break;
     case RESET: {
       // reset
+      buzzerOff();
       callOK();
     } break;
     case START: {
@@ -293,20 +312,12 @@ void runModule(int device) {
       int slot = readBuffer(7);
       pin = slot == 1 ? mePort[port].s1 : mePort[port].s2;
       int v = readBuffer(8);
+      Servo sv = servos[searchServoPin(pin)];
       if (v >= 0 && v <= 180) {
-        servo.attach(pin);
-        servo.write(v);
-      }
-    } break;
-    case SHUTTER: {
-      if (generalDevice.getPort() != port) {
-        generalDevice.reset(port);
-      }
-      int v = readBuffer(7);
-      if (v < 2) {
-        generalDevice.dWrite1(v);
-      } else {
-        generalDevice.dWrite2(v - 2);
+        if (!sv.attached()) {
+          sv.attach(pin);
+        }
+        sv.write(v);
       }
     } break;
     case DIGITAL: {
@@ -320,25 +331,41 @@ void runModule(int device) {
       analogWrite(pin, v);
     } break;
     case TONE: {
-      pinMode(pin, OUTPUT);
       int hz = readShort(6);
+      int tone_time = readShort(8);
       if (hz > 0) {
-        buzzer.tone(hz);
+        buzzer.tone(hz, tone_time);
       } else {
         buzzer.noTone();
       }
     } break;
     case SERVO_PIN: {
       int v = readBuffer(7);
+      Servo sv = servos[searchServoPin(pin)];
       if (v >= 0 && v <= 180) {
-        servo.attach(pin);
-        servo.write(v);
+        if (!sv.attached()) {
+          sv.attach(pin);
+        }
+        sv.write(v);
       }
     } break;
     case TIMER: {
       lastTime = millis() / 1000.0;
     } break;
   }
+}
+
+int searchServoPin(int pin) {
+  for (int i = 0; i < 8; i++) {
+    if (servo_pins[i] == pin) {
+      return i;
+    }
+    if (servo_pins[i] == 0) {
+      servo_pins[i] = pin;
+      return i;
+    }
+  }
+  return 0;
 }
 
 void readSensor(int device) {
@@ -353,10 +380,12 @@ void readSensor(int device) {
   pin = port;
   switch (device) {
     case ULTRASONIC_SENSOR: {
-      if (ultr.getPort() != port) {
-        ultr.reset(port);
+      if (us.getPort() != port) {
+        us.reset(port);
       }
-      value = (float)ultr.distanceCm(50000);
+      value = (float)us.distanceCm();
+      writeHead();
+      writeSerial(command_index);
       sendFloat(value);
     } break;
     case VERSION: {
@@ -367,12 +396,62 @@ void readSensor(int device) {
       sendFloat(digitalRead(pin));
     } break;
     case ANALOG: {
-      pin = analogs[pin];
+      // pin = analogs[pin];
+      pin = pgm_read_byte(&analogs[pin]);
       pinMode(pin, INPUT);
       sendFloat(analogRead(pin));
     } break;
     case TIMER: {
       sendFloat(currentTime);
     } break;
+  }
+}
+
+void setup() {
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH);
+  delay(300);
+  digitalWrite(13, LOW);
+  Serial.begin(115200);
+  delay(500);
+  buzzer.tone(500, 50);
+  delay(50);
+  buzzerOff();
+
+  Serial.print("Version: ");
+  Serial.println(mVersion);
+}
+
+void loop() {
+  currentTime = millis() / 1000.0 - lastTime;
+  readSerial();
+  if (isAvailable) {
+    unsigned char c = serialRead & 0xff;
+    if (c == 0x55 && isStart == false) {
+      if (prevc == 0xff) {
+        index = 1;
+        isStart = true;
+      }
+    } else {
+      prevc = c;
+      if (isStart) {
+        if (index == 2) {
+          dataLen = c;
+        } else if (index > 2) {
+          dataLen--;
+        }
+        writeBuffer(index, c);
+      }
+    }
+    index++;
+    if (index > 51) {
+      index = 0;
+      isStart = false;
+    }
+    if (isStart && dataLen == 0 && index > 3) {
+      isStart = false;
+      parseData();
+      index = 0;
+    }
   }
 }
