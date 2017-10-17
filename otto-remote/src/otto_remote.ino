@@ -98,6 +98,7 @@ void Reset() {
   for (int i = 0; i < 4; ++i) {
     direction[i] = false;
     servo[i].attach(servo_pins[i]);
+    delay(500);
   }
 
   StartMelody();
