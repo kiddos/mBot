@@ -39,7 +39,7 @@
 #define C4_SHARP 277
 #define C4 261
 
-SoftwareSerial bluetooth(1, 0);
+SoftwareSerial bluetooth(5, 6);
 Servo servo[4];
 bool direction[4] = {false};
 union Value {
@@ -98,10 +98,11 @@ void Reset() {
   for (int i = 0; i < 4; ++i) {
     direction[i] = false;
     servo[i].attach(servo_pins[i]);
-    delay(500);
+    delay(360);
   }
 
   StartMelody();
+  while (!bluetooth);
   OutputMessage("Hi I'm Otto Robot\n");
 }
 
@@ -197,7 +198,9 @@ void ParseCode() {
   }
 }
 
-void OutputMessage(const char* const message) { bluetooth.write(message); }
+void OutputMessage(char* message) {
+  bluetooth.write(message);
+}
 
 void setup() {
   pinMode(8, OUTPUT);
