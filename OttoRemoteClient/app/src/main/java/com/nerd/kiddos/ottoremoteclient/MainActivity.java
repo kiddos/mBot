@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,17 +40,23 @@ public class MainActivity extends Activity {
         }
 
         communicator = new Communicator();
-        if (communicator.init()) {
-            communicator.start();
+        if (communicator.checkValidAdapter()) {
+            if (communicator.checkAdpaterEnable()) {
+                communicator.init();
+                communicator.start();
+            } else {
+                Log.e(TAG, "fail to initialize communicator");
+            }
         } else {
-            Log.e(TAG, "fail to initialize communicator");
+            Toast.makeText(MainActivity.this, "No Valid Bluetooth adapter found", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     protected void onActivityResult (int requestCode, int resultCode, Intent data) {
-        if (resultCode != RESULT_OK) {
-
+        if (resultCode == RESULT_OK) {
+            communicator.init();
+            communicator.start();
         }
     }
 
@@ -61,17 +68,24 @@ public class MainActivity extends Activity {
         private UUID uuid;
         private boolean running;
 
-        public boolean init() {
+        public boolean checkValidAdapter() {
             bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter == null) {
                 return false;
             }
+            return true;
+        }
 
+        public boolean checkAdpaterEnable() {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                return false;
             }
+            return true;
+        }
 
+        public void init() {
             Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
             if (pairedDevices.size() > 0) {
                 // There are paired devices. Get the name and address of each paired device.
@@ -84,25 +98,21 @@ public class MainActivity extends Activity {
 
                     if (deviceName.startsWith("HC-")) {
                         try {
-                            // Get a BluetoothSocket to connect with the given BluetoothDevice.
-                            // MY_UUID is the app's UUID string, also used in the server code.
                             uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
                             bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid);
                         } catch (IOException e) {
                             Log.e(TAG, "Socket's create() method failed", e);
                         }
-                        Log.i(TAG, "connected to " + deviceName);
+                        Log.i(TAG, "socket create to connect " + deviceName);
                         break;
                     }
                 }
             }
-            return true;
         }
 
         @Override
         public void run() {
             bluetoothAdapter.cancelDiscovery();
-
             Log.i(TAG, "connecting to bluetooth");
             try {
                 // Connect to the remote device through the socket. This call blocks
@@ -140,15 +150,10 @@ public class MainActivity extends Activity {
         }
 
         private void handleConnection() {
+            Toast.makeText(MainActivity.this, "Communication Established", Toast.LENGTH_SHORT).show();
             running = true;
-
             try {
-                InputStream inputStream = bluetoothSocket.getInputStream();
                 OutputStream outputStream = bluetoothSocket.getOutputStream();
-
-                byte[] buffer = new byte[18];
-                inputStream.read(buffer);
-                Log.i(TAG, "message: " + new String(buffer));
 
                 while (running) {
                     if (command.size() > 0) {
