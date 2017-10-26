@@ -56,35 +56,37 @@ void Pitch(int16_t frequency, uint16_t sleep_millis) {
 }
 
 void DoneMelody() {
-  Pitch(F5, 200);
-  delay(20);
-  Pitch(F5, 200);
-  delay(20);
-  Pitch(F5, 200);
-  delay(220);
+  uint16_t t = 130;
+  Pitch(F5, t);
+  delay(t / 10);
+  Pitch(F5, t);
+  delay(t / 10);
+  Pitch(F5, t);
+  delay(t / 10 * 11);
 
-  Pitch(E5, 200);
-  delay(20);
-  Pitch(D5, 200);
-  delay(160);
-  Pitch(C5, 200);
-  delay(20);
+  Pitch(E5, t);
+  delay(t / 10);
+  Pitch(D5, t);
+  delay(t / 10 * 8);
+  Pitch(C5, t);
+  delay(t / 10);
 }
 
 void StartMelody() {
-  Pitch(E5, 200);
-  delay(20);
-  Pitch(E5, 200);
-  delay(60);
-  Pitch(E5, 200);
+  uint16_t t = 100;
+  Pitch(E5, t);
+  delay(t / 10);
+  Pitch(E5, t);
+  delay(t / 10 * 3);
+  Pitch(E5, t);
   delay(220);
 
-  Pitch(C5, 200);
-  delay(20);
-  Pitch(E5, 200);
-  delay(160);
-  Pitch(G5, 200);
-  delay(20);
+  Pitch(C5, t);
+  delay(t / 10);
+  Pitch(E5, t);
+  delay(t / 10 * 8);
+  Pitch(G5, t);
+  delay(t / 10);
 }
 
 void Reset() {
@@ -98,12 +100,11 @@ void Reset() {
   for (int i = 0; i < 4; ++i) {
     direction[i] = false;
     servo[i].attach(servo_pins[i]);
-    delay(360);
+    delay(200);
   }
 
   StartMelody();
-  while (!bluetooth);
-  OutputMessage("Hi I'm Otto Robot\n");
+  /** OutputMessage("Hi I'm Otto Robot\n"); */
 }
 
 void Walk(int max1, int max2, int paddle_pose[4]) {
