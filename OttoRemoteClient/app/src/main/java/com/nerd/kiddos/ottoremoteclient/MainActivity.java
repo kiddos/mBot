@@ -150,7 +150,6 @@ public class MainActivity extends Activity {
         }
 
         private void handleConnection() {
-            Toast.makeText(MainActivity.this, "Communication Established", Toast.LENGTH_SHORT).show();
             running = true;
             try {
                 OutputStream outputStream = bluetoothSocket.getOutputStream();
