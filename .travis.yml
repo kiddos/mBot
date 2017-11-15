@@ -1,0 +1,19 @@
+language: python
+python:
+  - "2.7"
+
+sudo: false
+cache:
+  directories:
+    - "~/.platformio"
+
+env:
+  - PLATFORMIO_CI_SRC=ledstrip/lib:ledstrip/src/ledstrip.ino
+  - PLATFORMIO_CI_SRC=otto-mblock/lib:otto-mblock/src/default.ino
+  - PLATFORMIO_CI_SRC=otto-remote/lib:otto-remote/src/otto_remote.ino
+
+install:
+  - pip install -U platformio
+
+script:
+  platformio ci --board nanoatmega328
