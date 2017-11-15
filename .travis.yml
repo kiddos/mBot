@@ -8,8 +8,8 @@ cache:
     - "~/.platformio"
 
 env:
-  - PLATFORMIO_CI_SRC=ledstrip/lib/mblock/src:ledstrip/src/ledstrip.ino
-  - PLATFORMIO_CI_SRC=otto-mblock/lib/mblock/src:otto-mblock/src/default.ino
+  - PLATFORMIO_CI_SRC=ledstrip/lib/makeblock/src:ledstrip/src/ledstrip.ino
+  - PLATFORMIO_CI_SRC=otto-mblock/lib/makeblock/src:otto-mblock/src/default.ino
   - PLATFORMIO_CI_SRC=otto-remote/src/otto_remote.ino
 
 install:
